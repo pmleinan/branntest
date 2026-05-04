@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="no">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Brannvesen — Fysisk Test</title>
+<style>
+  :root {
+    --bg: #f5f5f3;
+    --surface: #ffffff;
+    --surface2: #ebebea;
+    --text: #1a1a19;
+    --text2: #6b6b68;
+    --border: rgba(0,0,0,0.12);
+    --blue: #185FA5;
+    --blue-bg: #E6F1FB;
+    --green: #3B6D11;
+    --green-bg: #EAF3DE;
+    --red: #A32D2D;
+    --red-bg: #FCEBEB;
+    --amber: #854F0B;
+    --amber-bg: #FAEEDA;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #1c1c1a;
+      --surface: #2a2a28;
+      --surface2: #333331;
+      --text: #f0ede8;
+      --text2: #9a9a96;
+      --border: rgba(255,255,255,0.12);
+      --blue: #85B7EB;
+      --blue-bg: #0C447C;
+      --green: #C0DD97;
+      --green-bg: #27500A;
+      --red: #F09595;
+      --red-bg: #791F1F;
+      --amber: #FAC775;
+      --amber-bg: #633806;
+    }
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  .mode-bar { display: flex; gap: 6px; padding: 10px 12px; background: var(--surface); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
+  .mode-btn { flex: 1; padding: 9px; border: 1px solid var(--border); border-radius: 8px; cursor: pointer; font-size: 14px; background: transparent; color: var(--text2); font-weight: 500; transition: all 0.15s; }
+  .mode-btn.active { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+
+  .view { display: none; padding: 12px; }
+  .view.active { display: block; }
+
+  /* STORSKJERM */
+  .screen-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px; }
+  .timer-block { }
+  .timer-lbl { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 2px; }
+  .timer-big { font-size: 52px; font-weight: 600; letter-spacing: -2px; font-variant-numeric: tabular-nums; line-height: 1; }
+  .timer-med { font-size: 32px; font-weight: 500; letter-spacing: -1px; font-variant-numeric: tabular-nums; line-height: 1; }
+
+  .cur-ex-card { background: var(--surface); border-radius: 12px; padding: 16px; margin-bottom: 10px; border: 1px solid var(--border); }
+  .cur-ex-lbl { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 6px; }
+  .cur-ex-name { font-size: 26px; font-weight: 600; margin-bottom: 4px; }
+  .cur-ex-desc { font-size: 14px; color: var(--text2); }
+
+  .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .stat-card { background: var(--surface); border-radius: 10px; padding: 12px 8px; text-align: center; border: 1px solid var(--border); }
+  .stat-val { font-size: 30px; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .stat-lbl { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+  .ex-list { background: var(--surface); border-radius: 12px; overflow: hidden; border: 1px solid var(--border); }
+  .ex-row { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 14px; }
+  .ex-row:last-child { border-bottom: none; }
+  .ex-row.done { opacity: 0.45; }
+  .ex-row.current { background: var(--blue-bg); }
+  .ex-num { width: 24px; height: 24px; border-radius: 50%; background: var(--surface2); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; flex-shrink: 0; color: var(--text2); }
+  .ex-row.done .ex-num { background: var(--green-bg); color: var(--green); }
+  .ex-row.current .ex-num { background: var(--blue); color: white; }
+  .ex-prog { margin-left: auto; font-size: 13px; font-weight: 500; color: var(--text2); }
+  .ex-row.current .ex-prog { color: var(--blue); }
+
+  /* KONTROLLER */
+  .section { margin-bottom: 16px; }
+  .section-lbl { font-size: 11px; color: var(--text2); text-transform: uppercase; letter-spacing: 0.06em; margin-bottom: 8px; }
+  .card { background: var(--surface); border-radius: 12px; padding: 14px; border: 1px solid var(--border); }
+
+  .cur-name { font-size: 20px; font-weight: 600; margin-bottom: 2px; }
+  .cur-desc { font-size: 13px; color: var(--text2); margin-bottom: 14px; }
+
+  .rep-counter { display: flex; align-items: center; gap: 16px; margin-bottom: 6px; }
+  .rep-num { font-size: 72px; font-weight: 600; font-variant-numeric: tabular-nums; flex: 1; text-align: center; line-height: 1; }
+  .btn-round { width: 58px; height: 58px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface2); cursor: pointer; font-size: 28px; display: flex; align-items: center; justify-content: center; color: var(--text); transition: all 0.1s; flex-shrink: 0; }
+  .btn-round:active { transform: scale(0.91); }
+  .btn-round.big { width: 78px; height: 78px; font-size: 36px; background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+  .rep-target { font-size: 13px; color: var(--text2); text-align: center; margin-bottom: 14px; }
+
+  .sensor-strip { display: flex; align-items: center; gap: 10px; background: var(--surface2); border-radius: 8px; padding: 8px 12px; margin-bottom: 10px; }
+  .sensor-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+  .sensor-dot.active { background: var(--green); }
+  .sensor-label { font-size: 13px; color: var(--text2); flex: 1; }
+  .sensor-toggle { padding: 6px 14px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer; font-size: 13px; color: var(--text); }
+  .sensor-toggle.on { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+
+  .thresh-row { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; }
+  .thresh-row input[type=range] { flex: 1; accent-color: var(--blue); }
+  .thresh-val { font-size: 13px; font-weight: 600; min-width: 24px; font-variant-numeric: tabular-nums; }
+  .thresh-hint { font-size: 12px; color: var(--text2); }
+
+  .timer-row { display: flex; align-items: center; gap: 10px; background: var(--surface2); border-radius: 8px; padding: 10px 14px; margin-bottom: 10px; }
+  .timer-row-val { font-size: 28px; font-weight: 600; font-variant-numeric: tabular-nums; flex: 1; }
+  .timer-btns { display: flex; gap: 6px; }
+  .tbtn { padding: 7px 13px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); cursor: pointer; font-size: 13px; color: var(--text); }
+  .tbtn.running { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+
+  .btn-row { display: flex; gap: 8px; margin-bottom: 8px; }
+  .btn { flex: 1; padding: 13px; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); cursor: pointer; font-size: 15px; color: var(--text); font-weight: 500; transition: all 0.12s; text-align: center; }
+  .btn:active { transform: scale(0.97); }
+  .btn.success { background: var(--green-bg); color: var(--green); border-color: var(--green); }
+  .btn.danger { background: var(--red-bg); color: var(--red); border-color: var(--red); }
+  .btn.info { background: var(--blue-bg); color: var(--blue); border-color: var(--blue); }
+
+  .total-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .total-time-big { font-size: 20px; font-weight: 600; font-variant-numeric: tabular-nums; }
+
+  .done-banner { background: var(--green-bg); color: var(--green); border-radius: 12px; padding: 20px; text-align: center; margin-bottom: 14px; }
+  .done-title { font-size: 24px; font-weight: 700; margin-bottom: 4px; }
+  .done-sub { font-size: 15px; }
+
+  .bar-wrap { height: 6px; background: var(--surface2); border-radius: 3px; overflow: hidden; margin: 6px 0; }
+  .bar-fill { height: 100%; background: var(--green); border-radius: 3px; transition: width 0.05s; }
+  .bar-fill.hot { background: var(--red); }
+
+  .history { display: flex; gap: 5px; flex-wrap: wrap; margin-top: 10px; }
+  .hist-dot { width: 26px; height: 26px; border-radius: 50%; background: var(--green-bg); border: 1px solid var(--green); display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 600; color: var(--green); }
+
+  .perm-box { background: var(--surface); border-radius: 12px; padding: 24px; text-align: center; border: 1px solid var(--border); margin-bottom: 14px; }
+  .perm-icon { font-size: 36px; margin-bottom: 12px; }
+  .perm-title { font-size: 17px; font-weight: 600; margin-bottom: 6px; }
+  .perm-desc { font-size: 13px; color: var(--text2); margin-bottom: 16px; line-height: 1.6; }
+</style>
+</head>
+<body>
+
+<div class="mode-bar">
+  <button class="mode-btn active" id="btn-screen" onclick="setMode('screen')">📺 Storskjerm</button>
+  <button class="mode-btn" id="btn-ctrl" onclick="setMode('ctrl')">📱 Kontroller</button>
+</div>
+
+<div id="view-screen" class="view active"></div>
+<div id="view-ctrl" class="view"></div>
+
+<script>
+const EXERCISES = [
+  { name: "Markløft", desc: "2×24 kg kettlebells — 10 reps", target: 10, timed: false },
+  { name: "Gange frem", desc: "2×24 kg kettlebells — 10 meter", target: 1, timed: false, unitLabel: "tur" },
+  { name: "Mageleie", desc: "Hold stilling", target: 1, timed: true, unitLabel: "hold" },
+  { name: "Gange tilbake", desc: "2×24 kg kettlebells — 10 meter", target: 1, timed: false, unitLabel: "tur" },
+  { name: "Step-kasse opp/ned", desc: "Uten kettlebells — 10 reps", target: 10, timed: false },
+  { name: "Slamball løft/senk", desc: "10 kg slamball — 10 reps", target: 10, timed: false },
+];
+
+let s = {
+  mode: 'screen',
+  curEx: 0,
+  reps: 0,
+  exReps: Array(EXERCISES.length).fill(0),
+  exTimers: Array(EXERCISES.length).fill(0),
+  exDone: Array(EXERCISES.length).fill(false),
+  exTimer: 0,
+  exRunning: false,
+  totalElapsed: 0,
+  totalRunning: false,
+  finished: false,
+  sensorOn: false,
+  threshold: 8,
+};
+
+let exInterval = null;
+let totalInterval = null;
+let timerInterval = null;
+let cooldown = false;
+let peakState = { in: false, peak: 0 };
+let baseline = 9.8;
+
+function fmt(sec) {
+  const m = Math.floor(sec / 60), s2 = sec % 60;
+  return String(m).padStart(2,'0') + ':' + String(s2).padStart(2,'0');
+}
+
+function setMode(m) {
+  s.mode = m;
+  document.getElementById('btn-screen').className = 'mode-btn' + (m==='screen'?' active':'');
+  document.getElementById('btn-ctrl').className = 'mode-btn' + (m==='ctrl'?' active':'');
+  document.getElementById('view-screen').className = 'view' + (m==='screen'?' active':'');
+  document.getElementById('view-ctrl').className = 'view' + (m==='ctrl'?' active':'');
+  render();
+}
+
+function startExTimer() {
+  if (exInterval) return;
+  s.exRunning = true;
+  exInterval = setInterval(() => { s.exTimer++; s.exTimers[s.curEx] = s.exTimer; renderTimers(); }, 1000);
+}
+function stopExTimer() { clearInterval(exInterval); exInterval = null; s.exRunning = false; }
+function resetExTimer() { stopExTimer(); s.exTimer = 0; s.exTimers[s.curEx] = 0; render(); }
+
+function startTotal() {
+  if (totalInterval) return;
+  s.totalRunning = true;
+  totalInterval = setInterval(() => { s.totalElapsed++; renderTimers(); }, 1000);
+}
+function stopTotal() { clearInterval(totalInterval); totalInterval = null; s.totalRunning = false; }
+
+function renderTimers() {
+  document.querySelectorAll('.tt').forEach(el => el.textContent = fmt(s.totalElapsed));
+  document.querySelectorAll('.et').forEach(el => el.textContent = fmt(s.exTimer));
+}
+
+function addRep() {
+  const ex = EXERCISES[s.curEx];
+  if (s.reps < ex.target) { s.reps++; s.exReps[s.curEx] = s.reps; }
+  if (s.reps >= ex.target && !ex.timed) markDone();
+  else render();
+}
+function removeRep() { if (s.reps > 0) { s.reps--; s.exReps[s.curEx] = s.reps; render(); } }
+
+function markDone() {
+  s.exDone[s.curEx] = true;
+  stopExTimer();
+  stopSensor();
+  if (s.curEx < EXERCISES.length - 1) {
+    s.curEx++;
+    s.reps = 0;
+    s.exTimer = 0;
+  } else {
+    s.finished = true;
+    stopTotal();
+  }
+  render();
+}
+
+function goEx(i) { stopExTimer(); stopSensor(); s.curEx = i; s.reps = s.exReps[i]; s.exTimer = s.exTimers[i]; render(); }
+
+function resetAll() {
+  stopExTimer(); stopTotal(); stopSensor();
+  s = { ...s, curEx:0, reps:0, exReps:Array(EXERCISES.length).fill(0), exTimers:Array(EXERCISES.length).fill(0),
+    exDone:Array(EXERCISES.length).fill(false), exTimer:0, exRunning:false, totalElapsed:0, totalRunning:false, finished:false };
+  render();
+}
+
+// SENSOR
+function startSensor() {
+  if (typeof DeviceMotionEvent === 'undefined') { alert('Sensor ikke tilgjengelig på denne enheten.'); return; }
+  const doStart = () => {
+    s.sensorOn = true;
+    peakState = { in: false, peak: 0 };
+    let calibSamples = [], calibDone = false;
+    window._motionHandler = function(e) {
+      const acc = e.accelerationIncludingGravity;
+      if (!acc || acc.x === null) return;
+      const tot = Math.sqrt(acc.x*acc.x + acc.y*acc.y + acc.z*acc.z);
+      if (!calibDone) { calibSamples.push(tot); if (calibSamples.length >= 20) { baseline = calibSamples.reduce((a,b)=>a+b,0)/calibSamples.length; calibDone = true; } return; }
+      const dev = Math.abs(tot - baseline);
+      // update bar
+      const pct = Math.min(100, (dev / 20) * 100);
+      const bar = document.getElementById('motion-bar');
+      if (bar) { bar.style.width = pct+'%'; bar.className = 'bar-fill' + (dev > s.threshold ? ' hot' : ''); }
+      // peak detection
+      if (dev > s.threshold && !peakState.in) { peakState.in = true; peakState.peak = dev; }
+      else if (peakState.in && dev < s.threshold * 0.35) {
+        peakState.in = false;
+        if (!cooldown) { addRep(); cooldown = true; setTimeout(()=>{cooldown=false;}, 700); }
+      } else if (peakState.in) { peakState.peak = Math.max(peakState.peak, dev); }
+    };
+    window.addEventListener('devicemotion', window._motionHandler);
+    render();
+  };
+  if (typeof DeviceMotionEvent.requestPermission === 'function') {
+    DeviceMotionEvent.requestPermission().then(r => { if (r === 'granted') doStart(); else alert('Tilgang nektet.'); }).catch(doStart);
+  } else { doStart(); }
+}
+
+function stopSensor() {
+  if (window._motionHandler) { window.removeEventListener('devicemotion', window._motionHandler); window._motionHandler = null; }
+  s.sensorOn = false;
+}
+
+function toggleSensor() { s.sensorOn ? stopSensor() : startSensor(); render(); }
+
+function renderScreen() {
+  const el = document.getElementById('view-screen');
+  const ex = EXERCISES[s.curEx];
+  if (s.finished) {
+    el.innerHTML = `<div class="done-banner" style="margin-top:20px"><div class="done-title">Test fullført! 🎉</div><div class="done-sub">Total tid: ${fmt(s.totalElapsed)}</div></div>
+    <button class="btn" onclick="resetAll()" style="width:100%;margin-top:8px">Start ny test</button>`;
+    return;
+  }
+  const exRows = EXERCISES.map((e,i) => {
+    let cls = 'ex-row' + (s.exDone[i]?' done':i===s.curEx?' current':'');
+    const prog = e.timed ? fmt(s.exTimers[i]) : (s.exReps[i]+'/'+e.target);
+    return `<div class="${cls}"><div class="ex-num">${s.exDone[i]?'✓':i+1}</div><div style="flex:1">${e.name}</div><div class="ex-prog">${prog}</div></div>`;
+  }).join('');
+  el.innerHTML = `
+    <div class="screen-top">
+      <div class="timer-block"><div class="timer-lbl">Total tid</div><div class="timer-big tt">${fmt(s.totalElapsed)}</div></div>
+      <div class="timer-block" style="text-align:right"><div class="timer-lbl">Øvelse ${s.curEx+1}/${EXERCISES.length}</div><div class="timer-med et">${fmt(s.exTimer)}</div></div>
+    </div>
+    <div class="cur-ex-card">
+      <div class="cur-ex-lbl">Nåværende øvelse</div>
+      <div class="cur-ex-name">${ex.name}</div>
+      <div class="cur-ex-desc">${ex.desc} · ${ex.timed ? fmt(s.exTimer) : s.reps+' / '+ex.target+' reps'}</div>
+    </div>
+    <div class="stats-row">
+      <div class="stat-card"><div class="stat-val">${s.curEx}</div><div class="stat-lbl">Fullført</div></div>
+      <div class="stat-card"><div class="stat-val">${ex.timed ? fmt(s.exTimer) : s.reps}</div><div class="stat-lbl">${ex.timed?'Tid':'Reps'}</div></div>
+      <div class="stat-card"><div class="stat-val">${EXERCISES.length - s.curEx}</div><div class="stat-lbl">Gjenstår</div></div>
+    </div>
+    <div class="ex-list">${exRows}</div>`;
+}
+
+function renderCtrl() {
+  const el = document.getElementById('view-ctrl');
+  const ex = EXERCISES[s.curEx];
+
+  if (s.finished) {
+    el.innerHTML = `<div class="done-banner"><div class="done-title">Test fullført! 🎉</div><div class="done-sub">Total tid: ${fmt(s.totalElapsed)}</div></div>
+      <button class="btn" onclick="resetAll()" style="width:100%">Start ny test</button>`;
+    return;
+  }
+
+  const repUI = ex.timed ? '' : `
+    <div class="rep-counter">
+      <button class="btn-round" onclick="removeRep()">−</button>
+      <div class="rep-num">${s.reps}</div>
+      <button class="btn-round big" onclick="addRep()">+</button>
+    </div>
+    <div class="rep-target">Mål: ${ex.target} reps</div>
+    <div class="history" id="rep-hist">${Array.from({length:s.reps},(_,i)=>`<div class="hist-dot">${i+1}</div>`).join('')}</div>`;
+
+  const sensorUI = !ex.timed ? `
+    <div class="section">
+      <div class="section-lbl">Automatisk rep-teller (sensor)</div>
+      <div class="card">
+        <div class="sensor-strip">
+          <div class="sensor-dot ${s.sensorOn?'active':''}" id="sdot"></div>
+          <div class="sensor-label">${s.sensorOn ? 'Sensor aktiv — beveg deg!' : 'Sensor av'}</div>
+          <button class="sensor-toggle ${s.sensorOn?'on':''}" onclick="toggleSensor()">${s.sensorOn?'Stopp':'Start'}</button>
+        </div>
+        <div class="thresh-row">
+          <span style="font-size:12px;color:var(--text2)">Terskel</span>
+          <input type="range" min="3" max="20" value="${s.threshold}" step="0.5" oninput="s.threshold=parseFloat(this.value);document.getElementById('tval').textContent=this.value">
+          <span class="thresh-val" id="tval">${s.threshold}</span>
+        </div>
+        <div class="bar-wrap"><div class="bar-fill" id="motion-bar" style="width:0%"></div></div>
+        <div class="thresh-hint">Øk terskelen hvis du får falske tellinger</div>
+      </div>
+    </div>` : '';
+
+  const exListRows = EXERCISES.map((e,i) => {
+    let cls = 'ex-row' + (s.exDone[i]?' done':i===s.curEx?' current':'');
+    return `<div class="${cls}" onclick="goEx(${i})" style="cursor:pointer">
+      <div class="ex-num">${s.exDone[i]?'✓':i+1}</div>
+      <div style="flex:1;font-size:13px">${e.name}</div>
+      <div class="ex-prog">${s.exDone[i]?'✓':i===s.curEx?'←':''}</div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML = `
+    <div class="section">
+      <div class="section-lbl">Nåværende øvelse</div>
+      <div class="card">
+        <div class="cur-name">${ex.name}</div>
+        <div class="cur-desc">${ex.desc}</div>
+        ${repUI}
+      </div>
+    </div>
+    ${sensorUI}
+    <div class="section">
+      <div class="section-lbl">Timer</div>
+      <div class="timer-row">
+        <span style="font-size:13px;color:var(--text2)">Øvelse</span>
+        <div class="timer-row-val et">${fmt(s.exTimer)}</div>
+        <div class="timer-btns">
+          <button class="tbtn ${s.exRunning?'running':''}" onclick="${s.exRunning?'stopExTimer':'startExTimer'}();render()">${s.exRunning?'Stopp':'Start'}</button>
+          <button class="tbtn" onclick="resetExTimer()">Nullstill</button>
+        </div>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn success" onclick="markDone()">Fullfør ✓</button>
+      ${s.curEx > 0 ? `<button class="btn" onclick="goEx(${s.curEx-1})">← Forrige</button>` : ''}
+    </div>
+    <div class="section">
+      <div class="section-lbl">
+        <div class="total-row">
+          <span>Alle øvelser</span>
+          <span style="display:flex;align-items:center;gap:8px">
+            Total: <span class="total-time-big tt">${fmt(s.totalElapsed)}</span>
+            <button class="tbtn ${s.totalRunning?'running':''}" onclick="${s.totalRunning?'stopTotal':'startTotal'}();render()">${s.totalRunning?'Stopp':'Start'}</button>
+          </span>
+        </div>
+      </div>
+      <div class="ex-list">${exListRows}</div>
+    </div>
+    <button class="btn danger" style="width:100%;margin-top:8px" onclick="if(confirm('Nullstill hele testen?'))resetAll()">Nullstill test</button>`;
+}
+
+function render() {
+  if (s.mode === 'screen') renderScreen();
+  else renderCtrl();
+}
+
+render();
+</script>
+</body>
+</html>
